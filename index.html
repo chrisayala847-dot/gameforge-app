@@ -158,19 +158,18 @@ a{color:var(--ac)}
       <h1>Settings</h1>
       <div class="card stack">
         <div>
-          <div class="lbl">OpenAI API key</div>
-          <input id="key" type="password" autocomplete="off" placeholder="sk-...">
-          <p class="small muted" style="margin:8px 0 0">Stored only on this phone and sent only to api.openai.com. Get a key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a>.</p>
+          <div class="lbl">AI provider</div>
+          <div class="chips" id="provChips"></div>
+          <p class="small muted" id="provNote" style="margin:8px 0 0"></p>
+        </div>
+        <div>
+          <div class="lbl" id="keyLbl">API key</div>
+          <input id="key" type="password" autocomplete="off">
+          <p class="small muted" id="keyHelp" style="margin:8px 0 0"></p>
         </div>
         <div>
           <div class="lbl">Model</div>
-          <select id="model">
-            <option value="gpt-5">gpt-5 (best quality)</option>
-            <option value="gpt-5-mini">gpt-5-mini (faster, cheaper)</option>
-            <option value="gpt-4.1">gpt-4.1</option>
-            <option value="gpt-4o">gpt-4o</option>
-            <option value="custom">Custom…</option>
-          </select>
+          <select id="model"></select>
           <input id="modelCustom" placeholder="Model ID" style="margin-top:8px;display:none">
         </div>
         <div class="row"><button class="btn" id="saveKey" style="flex:1">Save</button><button class="btn" id="testKey" style="flex:1">Test key</button></div>
@@ -264,25 +263,53 @@ const save=()=>S.set('gf_games',games);
 /* ---------- options ---------- */
 const OPTS={genre:['Platformer','Shooter','Puzzle','Runner','RPG','Survival','Arcade','Racing'],difficulty:['Easy','Normal','Hard'],style:['Pixel','Neon','Minimal','Cartoon'],controls:['Touch joystick','Tap','Swipe','Tilt']};
 const sel={genre:'Survival',difficulty:'Normal',style:'Pixel',controls:'Touch joystick'};
-$$('.chips').forEach(box=>{const g=box.dataset.group;OPTS[g].forEach(o=>{const b=document.createElement('button');b.className='chip'+(sel[g]===o?' on':'');b.textContent=o;b.onclick=()=>{sel[g]=o;box.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c===b))};box.appendChild(b)})});
+$$('.chips[data-group]').forEach(box=>{const g=box.dataset.group;OPTS[g].forEach(o=>{const b=document.createElement('button');b.className='chip'+(sel[g]===o?' on':'');b.textContent=o;b.onclick=()=>{sel[g]=o;box.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c===b))};box.appendChild(b)})});
 
 /* ---------- tabs ---------- */
 function tab(t){$$('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));$$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+t));if(t==='library')renderLib();if(t==='create')checkKey()}
 $$('nav.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
 
 /* ---------- settings ---------- */
-const cfg=S.get('gf_cfg',{key:'',model:'gpt-5',custom:''});
-$('#key').value=cfg.key;$('#model').value=['gpt-5','gpt-5-mini','gpt-4.1','gpt-4o'].includes(cfg.model)?cfg.model:'custom';
-if($('#model').value==='custom'){$('#modelCustom').style.display='block';$('#modelCustom').value=cfg.custom||cfg.model}
+const PROV={
+ gemini:{name:'Gemini',tag:'Free',url:'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',
+  note:'Free with daily limits (about 20 builds a day on Flash, 500 on Flash-Lite). No card needed.',
+  help:'Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>. Starts with AIza.',ph:'AIza...',
+  models:[['gemini-3.8-flash','Gemini 3.8 Flash (best free)'],['gemini-3.6-flash','Gemini 3.6 Flash'],['gemini-3.5-flash-lite','Gemini 3.5 Flash-Lite (more builds per day)'],['gemini-3.1-flash-lite','Gemini 3.1 Flash-Lite']]},
+ openrouter:{name:'OpenRouter',tag:'Free',url:'https://openrouter.ai/api/v1/chat/completions',
+  note:'Free models cost $0, limited to about 50 requests a day. Quality varies by model.',
+  help:'Get a free key at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener">openrouter.ai/keys</a>. Starts with sk-or-.',ph:'sk-or-...',
+  models:[['nvidia/nemotron-3-ultra-550b-a55b:free','Nemotron 3 Ultra (free)'],['google/gemma-4-31b-it:free','Gemma 4 31B (free)'],['openrouter/free','Auto-pick a free model']]},
+ openai:{name:'OpenAI',tag:'Paid',url:'https://api.openai.com/v1/chat/completions',
+  note:'Best game quality. Needs API credit on your OpenAI account.',
+  help:'Get a key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a>. Starts with sk-.',ph:'sk-...',
+  models:[['gpt-5','gpt-5 (best quality)'],['gpt-5-mini','gpt-5-mini (faster, cheaper)'],['gpt-4.1','gpt-4.1'],['gpt-4o','gpt-4o']]}
+};
+const old=S.get('gf_cfg',{});
+const cfg=S.get('gf_cfg2',null)||{prov:'gemini',keys:{openai:old.key||'',gemini:'',openrouter:''},models:{openai:old.model||'gpt-5',gemini:'gemini-3.8-flash',openrouter:'nvidia/nemotron-3-ultra-550b-a55b:free'}};
+let uiProv=cfg.prov;
+const curKey=()=>cfg.keys[cfg.prov]||'',curModel=()=>cfg.models[cfg.prov];
+function renderProv(){const P=PROV[uiProv];
+ $('#provChips').innerHTML=Object.keys(PROV).map(k=>`<button class="chip${k===uiProv?' on':''}" data-k="${k}">${PROV[k].name} · ${PROV[k].tag}</button>`).join('');
+ $$('#provChips .chip').forEach(b=>b.onclick=()=>{uiProv=b.dataset.k;renderProv();$('#keyStatus').textContent=''});
+ $('#provNote').textContent=P.note;$('#keyLbl').textContent=P.name+' API key';$('#keyHelp').innerHTML=P.help+' Stored only on this phone.';
+ $('#key').placeholder=P.ph;$('#key').value=cfg.keys[uiProv]||'';
+ const m=cfg.models[uiProv];const known=P.models.some(x=>x[0]===m);
+ $('#model').innerHTML=P.models.map(x=>`<option value="${x[0]}">${x[1]}</option>`).join('')+'<option value="custom">Custom…</option>';
+ $('#model').value=known?m:'custom';$('#modelCustom').style.display=known?'none':'block';$('#modelCustom').value=known?'':m}
 $('#model').onchange=()=>$('#modelCustom').style.display=$('#model').value==='custom'?'block':'none';
-function readCfg(){cfg.key=$('#key').value.trim();const m=$('#model').value;cfg.custom=$('#modelCustom').value.trim();cfg.model=m==='custom'?(cfg.custom||'gpt-5'):m;S.set('gf_cfg',cfg)}
-$('#saveKey').onclick=()=>{readCfg();toast('Saved');checkKey()};
-$('#testKey').onclick=async()=>{readCfg();const st=$('#keyStatus');st.className='small muted';st.textContent='Testing…';
- try{const r=await fetch('https://api.openai.com/v1/models/'+encodeURIComponent(cfg.model),{headers:{Authorization:'Bearer '+cfg.key}});
-  if(r.ok){st.className='small keyok';st.textContent='Key works. Model '+cfg.model+' is available.'}
-  else{const j=await r.json().catch(()=>({}));st.className='small keyno';st.textContent='Problem: '+(j.error&&j.error.message||r.status)}}
- catch(e){st.className='small keyno';st.textContent='Could not reach OpenAI: '+e.message}};
-function checkKey(){$('#keyWarn').style.display=cfg.key?'none':'block'}
+function readCfg(){cfg.prov=uiProv;cfg.keys[uiProv]=$('#key').value.trim();const m=$('#model').value;cfg.models[uiProv]=m==='custom'?($('#modelCustom').value.trim()||PROV[uiProv].models[0][0]):m;S.set('gf_cfg2',cfg)}
+$('#saveKey').onclick=()=>{readCfg();toast('Saved · using '+PROV[cfg.prov].name);checkKey()};
+$('#testKey').onclick=async()=>{readCfg();const st=$('#keyStatus');st.className='small muted';st.textContent='Testing…';const k=curKey(),m=curModel();
+ if(!k){st.className='small keyno';st.textContent='Paste a key first.';return}
+ try{let r;
+  if(cfg.prov==='openai')r=await fetch('https://api.openai.com/v1/models/'+encodeURIComponent(m),{headers:{Authorization:'Bearer '+k}});
+  else if(cfg.prov==='gemini')r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+encodeURIComponent(m),{headers:{'x-goog-api-key':k}});
+  else r=await fetch('https://openrouter.ai/api/v1/key',{headers:{Authorization:'Bearer '+k}});
+  if(r.ok){st.className='small keyok';st.textContent='Key works. Ready to build with '+m+' on '+PROV[cfg.prov].name+'.';checkKey()}
+  else{const j=await r.json().catch(()=>({}));const e=Array.isArray(j)?j[0]:j;st.className='small keyno';st.textContent='Problem: '+(e&&e.error&&e.error.message||r.status)}}
+ catch(e){st.className='small keyno';st.textContent='Could not reach '+PROV[cfg.prov].name+': '+e.message}};
+function checkKey(){const w=$('#keyWarn');if(curKey()){w.style.display='none'}else{w.style.display='block';w.innerHTML='Add a free Gemini or OpenRouter key, or an OpenAI key, in <b>Settings</b> to generate games. <button class="btn sm" style="margin-top:10px" onclick="tab(\'settings\')">Open Settings</button>'}}
+renderProv();
 $('#wipe').onclick=()=>{if(!games.length)return toast('No games to delete');askConfirm('Delete all '+games.length+' games?',()=>{games=[];save();renderLib();toast('All games deleted')})};
 function askConfirm(msg,fn){const s=$('#moreSheet');const old=s.innerHTML;s.innerHTML=`<div class="card stack"><h2>${esc(msg)}</h2><button class="btn danger" id="cfY" style="width:100%">Delete</button><button class="btn" id="cfN" style="width:100%">Cancel</button></div>`;s.classList.add('on');
  const close=()=>{s.classList.remove('on');s.innerHTML=old;bindMore()};$('#cfY').onclick=()=>{close();fn()};$('#cfN').onclick=close}
@@ -312,17 +339,20 @@ function setBusy(on,t,s){$('#busy').classList.toggle('on',on);if(t)$('#busyT').t
 $('#busyCancel').onclick=()=>{abortCtl&&abortCtl.abort()};
 function extractHTML(t){t=t.trim();const f=t.match(/```(?:html)?\s*([\s\S]*?)```/i);if(f)t=f[1].trim();const i=t.search(/<!DOCTYPE html|<html/i);if(i>0)t=t.slice(i);const e=t.lastIndexOf('</html>');if(e>0)t=t.slice(0,e+7);return t}
 async function callAI(messages,label,expect=26000){
- if(!cfg.key){tab('settings');toast('Add your OpenAI API key first');throw new Error('nokey')}
- abortCtl=new AbortController();setBusy(true,label,'Contacting OpenAI…');
+ const P=PROV[cfg.prov];if(!curKey()){tab('settings');toast('Add an API key first');throw new Error('nokey')}
+ abortCtl=new AbortController();setBusy(true,label,'Contacting '+P.name+'…');
  try{
-  const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',signal:abortCtl.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+cfg.key},body:JSON.stringify({model:cfg.model,stream:true,messages})});
-  if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(j.error&&j.error.message||('HTTP '+r.status))}
+  const h={'Content-Type':'application/json',Authorization:'Bearer '+curKey()};if(cfg.prov==='openrouter'){h['HTTP-Referer']='https://chrisayala847-dot.github.io/gameforge-app/';h['X-Title']='GameForge'}
+  const r=await fetch(P.url,{method:'POST',signal:abortCtl.signal,headers:h,body:JSON.stringify({model:curModel(),stream:true,messages})});
+  if(!r.ok){const j=await r.json().catch(()=>({}));const e=Array.isArray(j)?j[0]:j;let msg=e&&e.error&&e.error.message||('HTTP '+r.status);
+   if(r.status===429)msg=P.name+' daily or per-minute free limit reached. Wait a bit, switch to a Flash-Lite model, or try another provider in Settings.';
+   throw new Error(msg)}
   const rd=r.body.getReader(),dec=new TextDecoder();let buf='',out='',t0=Date.now();
   $('#busyS').textContent='Thinking through the design…';
   while(true){const {done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});
    const lines=buf.split('\n');buf=lines.pop();
    for(const l of lines){const s=l.trim();if(!s.startsWith('data:'))continue;const d=s.slice(5).trim();if(d==='[DONE]')continue;
-    try{const j=JSON.parse(d);const c=j.choices&&j.choices[0]&&j.choices[0].delta&&j.choices[0].delta.content;if(c)out+=c}catch(e){}}
+    try{const j=JSON.parse(d);if(j.error)throw new Error(j.error.message||'Provider error');const c=j.choices&&j.choices[0]&&j.choices[0].delta&&j.choices[0].delta.content;if(c)out+=c}catch(e){if(e.message&&!(e instanceof SyntaxError))throw e}}
    if(out.length){const p=Math.min(96,out.length/expect*100);$('#busyBar').style.width=p+'%';$('#busyS').textContent='Writing code… '+(out.length/1000).toFixed(1)+'k characters'}
    else $('#busyS').textContent='Thinking through the design… '+Math.round((Date.now()-t0)/1000)+'s'}
   $('#busyBar').style.width='100%';
