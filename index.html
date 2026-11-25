@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="GameForge">
+<meta name="theme-color" content="#0f1115">
+<title>GameForge</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&f[]=clash-display@600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1115;--s1:#171a21;--s2:#1f232c;--s3:#2a2f3a;--line:#2e3340;
+  --tx:#eef0f4;--tx2:#a3a9b6;--tx3:#6c7282;
+  --ac:#f5a524;--ac2:#ffbf4d;--acTx:#1a1204;
+  --ok:#4ade80;--warn:#facc15;--err:#f87171;--info:#60a5fa;
+  --r:14px;--sat:env(safe-area-inset-top);--sab:env(safe-area-inset-bottom);
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--tx);font:15px/1.45 Satoshi,system-ui,-apple-system,sans-serif;overscroll-behavior:none}
+body{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+button:active{transform:scale(.96)}
+input,textarea,select{font:inherit;color:var(--tx);background:var(--s2);border:1px solid var(--line);border-radius:12px;padding:12px;width:100%;outline:none}
+input:focus,textarea:focus,select:focus{border-color:var(--ac)}
+textarea{resize:none}
+h1,h2{font-family:"Clash Display",Satoshi,sans-serif;font-weight:600;margin:0;letter-spacing:.01em}
+h1{font-size:26px}h2{font-size:18px}
+.muted{color:var(--tx2)}.small{font-size:13px}
+header.top{padding:calc(var(--sat) + 10px) 18px 10px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);background:var(--bg)}
+header.top .logo{width:28px;height:28px;flex:none}
+header.top .ttl{flex:1;min-width:0;font-family:"Clash Display";font-size:19px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.view{display:none;padding:18px 18px 28px}.view.on{display:block}
+nav.tabs{display:flex;border-top:1px solid var(--line);background:var(--s1);padding-bottom:var(--sab)}
+nav.tabs button{flex:1;padding:10px 0 8px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--tx3)}
+nav.tabs button.on{color:var(--ac)}
+nav.tabs svg{width:22px;height:22px}
+.card{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.stack>*+*{margin-top:14px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:8px 13px;border-radius:999px;background:var(--s2);border:1px solid var(--line);font-size:14px;color:var(--tx2)}
+.chip.on{background:var(--ac);color:var(--acTx);border-color:var(--ac);font-weight:700}
+.lbl{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--tx3);margin-bottom:8px;font-weight:700}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 18px;border-radius:14px;font-weight:700;background:var(--s2);border:1px solid var(--line);min-height:48px}
+.btn.pri{background:var(--ac);color:var(--acTx);border-color:var(--ac);width:100%;font-size:16px}
+.btn.pri:disabled{opacity:.5}
+.btn.sm{padding:8px 12px;min-height:38px;font-size:14px;border-radius:11px}
+.btn.danger{color:var(--err)}
+.row{display:flex;gap:10px;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lib{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.gcard{background:var(--s1);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;text-align:left}
+.gcard .th{aspect-ratio:3/4;background:var(--s2) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-family:"Clash Display";font-size:28px}
+.gcard .meta{padding:10px}
+.gcard .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{text-align:center;padding:48px 20px;color:var(--tx2)}
+.empty svg{width:56px;height:56px;color:var(--tx3);margin-bottom:10px}
+/* workspace */
+#ws{position:fixed;inset:0;background:var(--bg);display:none;flex-direction:column;z-index:20}
+#ws.on{display:flex}
+.wtabs{display:flex;gap:6px;padding:8px 12px;border-bottom:1px solid var(--line);overflow-x:auto}
+.wtabs button{padding:8px 14px;border-radius:10px;font-size:14px;color:var(--tx2);white-space:nowrap;position:relative}
+.wtabs button.on{background:var(--s2);color:var(--tx)}
+.badge{display:inline-block;min-width:18px;padding:0 5px;border-radius:9px;background:var(--err);color:#fff;font-size:11px;font-weight:700;margin-left:4px;line-height:18px}
+.pane{flex:1;display:none;min-height:0;flex-direction:column}
+.pane.on{display:flex}
+#stage{flex:1;position:relative;background:#000;min-height:0}
+#stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000}
+#stage.full{position:fixed;inset:0;z-index:50}
+#exitFull{position:absolute;top:calc(var(--sat) + 8px);right:10px;z-index:3;width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;color:#fff;border:1px solid rgba(255,255,255,.2)}
+#stage.full #exitFull{display:flex}
+.playbar{display:flex;gap:8px;padding:8px 12px;border-top:1px solid var(--line);overflow-x:auto}
+.refine{padding:10px 12px calc(var(--sab) + 10px);border-top:1px solid var(--line);background:var(--s1);display:flex;gap:8px}
+.refine input{flex:1;padding:11px 12px}
+.refine .btn{flex:none}
+#con{flex:1;overflow:auto;font:12.5px/1.5 var(--mono);padding:10px 12px}
+.ln{padding:5px 0;border-bottom:1px solid var(--s2);white-space:pre-wrap;word-break:break-word}
+.ln.error{color:var(--err)}.ln.warn{color:var(--warn)}.ln.info{color:var(--info)}.ln.log{color:var(--tx2)}
+.edwrap{flex:1;position:relative;min-height:0;overflow:auto;background:#0b0d11}
+.ed{position:relative;min-height:100%}
+.ed pre,.ed textarea{margin:0;padding:12px;font:12.5px/1.55 var(--mono);white-space:pre;tab-size:2;border:0;border-radius:0;min-height:100%;width:max-content;min-width:100%}
+.ed pre{pointer-events:none;color:#c9d1e0}
+.ed textarea{position:absolute;inset:0;background:transparent;color:transparent;caret-color:var(--ac);overflow:hidden;height:100%}
+.k{color:#f5a524}.s{color:#86efac}.c{color:#6c7282;font-style:italic}.n{color:#93c5fd}.t{color:#f9a8d4}
+.vlist{flex:1;overflow:auto;padding:12px}
+.ver{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--s1);margin-bottom:8px}
+.ver.cur{border-color:var(--ac)}
+.ver .vt{flex:1;min-width:0}
+.ver .vt div:first-child{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* overlay */
+#busy{position:fixed;inset:0;background:rgba(10,11,14,.88);display:none;align-items:center;justify-content:center;z-index:60;padding:24px}
+#busy.on{display:flex}
+#busy .card{width:100%;max-width:380px;text-align:center}
+.bar{height:6px;background:var(--s3);border-radius:3px;overflow:hidden;margin:16px 0 10px}
+.bar i{display:block;height:100%;width:0;background:var(--ac);transition:width .3s}
+.spin{width:38px;height:38px;border:3px solid var(--s3);border-top-color:var(--ac);border-radius:50%;animation:sp 0.9s linear infinite;margin:0 auto 12px}
+@keyframes sp{to{transform:rotate(360deg)}}
+#toast{position:fixed;left:50%;bottom:calc(var(--sab) + 84px);transform:translateX(-50%) translateY(20px);background:var(--s3);padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.25s;z-index:70;pointer-events:none;max-width:90vw;text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%)}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;z-index:65}
+.sheet.on{display:flex}
+.sheet .card{width:100%;border-radius:20px 20px 0 0;padding-bottom:calc(var(--sab) + 18px)}
+.keyok{color:var(--ok)}.keyno{color:var(--warn)}
+a{color:var(--ac)}
+</style>
+</head>
+<body>
+<header class="top">
+  <svg class="logo" viewBox="0 0 100 100" aria-label="GameForge"><rect width="100" height="100" rx="22" fill="#1f232c"/><path d="M28 62h44l-6-22H34z" fill="#f5a524"/><circle cx="40" cy="52" r="4" fill="#1f232c"/><circle cx="60" cy="52" r="4" fill="#1f232c"/></svg>
+  <div class="ttl" id="hdr">GameForge</div>
+</header>
+<main>
+  <!-- CREATE -->
+  <section class="view on" id="v-create">
+    <div class="stack">
+      <div>
+        <h1>Describe a game</h1>
+        <p class="muted small" style="margin:6px 0 0">Type an idea. GameForge builds a complete, playable game with touch controls.</p>
+      </div>
+      <div id="keyWarn" class="card small" style="display:none;border-color:var(--warn)">Add your OpenAI API key in <b>Settings</b> to generate games. <button class="btn sm" style="margin-top:10px" onclick="tab('settings')">Open Settings</button></div>
+      <textarea id="idea" rows="5" placeholder="A top-down zombie survival game with crafting and waves"></textarea>
+      <div>
+        <div class="lbl">Genre</div>
+        <div class="chips" data-group="genre"></div>
+      </div>
+      <div>
+        <div class="lbl">Difficulty</div>
+        <div class="chips" data-group="difficulty"></div>
+      </div>
+      <div>
+        <div class="lbl">Art style</div>
+        <div class="chips" data-group="style"></div>
+      </div>
+      <div>
+        <div class="lbl">Controls</div>
+        <div class="chips" data-group="controls"></div>
+      </div>
+      <button class="btn pri" id="genBtn">Build game</button>
+      <button class="btn" id="demoBtn" style="width:100%">Try a built-in demo game</button>
+    </div>
+  </section>
+  <!-- LIBRARY -->
+  <section class="view" id="v-library">
+    <div class="row" style="justify-content:space-between;margin-bottom:14px"><h1>Library</h1><span class="muted small" id="libCount"></span></div>
+    <div id="lib" class="lib"></div>
+  </section>
+  <!-- SETTINGS -->
+  <section class="view" id="v-settings">
+    <div class="stack">
+      <h1>Settings</h1>
+      <div class="card stack">
+        <div>
+          <div class="lbl">OpenAI API key</div>
+          <input id="key" type="password" autocomplete="off" placeholder="sk-...">
+          <p class="small muted" style="margin:8px 0 0">Stored only on this phone and sent only to api.openai.com. Get a key at <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">platform.openai.com</a>.</p>
+        </div>
+        <div>
+          <div class="lbl">Model</div>
+          <select id="model">
+            <option value="gpt-5">gpt-5 (best quality)</option>
+            <option value="gpt-5-mini">gpt-5-mini (faster, cheaper)</option>
+            <option value="gpt-4.1">gpt-4.1</option>
+            <option value="gpt-4o">gpt-4o</option>
+            <option value="custom">Custom…</option>
+          </select>
+          <input id="modelCustom" placeholder="Model ID" style="margin-top:8px;display:none">
+        </div>
+        <div class="row"><button class="btn" id="saveKey" style="flex:1">Save</button><button class="btn" id="testKey" style="flex:1">Test key</button></div>
+        <div class="small" id="keyStatus"></div>
+      </div>
+      <div class="card stack">
+        <div class="lbl" style="margin:0">Install on iPhone</div>
+        <p class="small muted" style="margin:0">Open this page in Safari, tap the Share button, then <b>Add to Home Screen</b>. GameForge opens full screen and works offline after the first load. Generating new games needs an internet connection.</p>
+      </div>
+      <div class="card stack">
+        <div class="lbl" style="margin:0">Data</div>
+        <button class="btn danger" id="wipe">Delete all games</button>
+      </div>
+    </div>
+  </section>
+</main>
+<nav class="tabs">
+  <button data-tab="create" class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Create</button>
+  <button data-tab="library"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Library</button>
+  <button data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Settings</button>
+</nav>
+
+<!-- WORKSPACE -->
+<div id="ws">
+  <header class="top">
+    <button id="wsBack" aria-label="Back" style="padding:4px"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <div class="ttl" id="wsTitle">Game</div>
+    <button id="wsMore" aria-label="More" style="padding:4px"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg></button>
+  </header>
+  <div class="wtabs">
+    <button data-p="play" class="on">Play</button>
+    <button data-p="console">Console <span class="badge" id="errBadge" style="display:none">0</span></button>
+    <button data-p="code">Code</button>
+    <button data-p="versions">Versions</button>
+  </div>
+  <div class="pane on" id="p-play">
+    <div id="stage"><iframe id="frame" sandbox="allow-scripts allow-pointer-lock" allow="autoplay; gyroscope; accelerometer"></iframe>
+      <button id="exitFull" aria-label="Exit full screen"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="playbar">
+      <button class="btn sm" id="bFull">Full screen</button>
+      <button class="btn sm" id="bRestart">Restart</button>
+      <button class="btn sm" id="bFps">FPS: off</button>
+      <button class="btn sm" id="bFix2" style="display:none;color:var(--err)">Fix errors</button>
+    </div>
+  </div>
+  <div class="pane" id="p-console">
+    <div class="playbar" style="border-top:0;border-bottom:1px solid var(--line)">
+      <button class="btn sm" id="bFix" style="color:var(--acTx);background:var(--ac);border-color:var(--ac)">Fix it with AI</button>
+      <button class="btn sm" id="bClear">Clear</button>
+    </div>
+    <div id="con"></div>
+  </div>
+  <div class="pane" id="p-code">
+    <div class="playbar" style="border-top:0;border-bottom:1px solid var(--line)">
+      <button class="btn sm" id="bRun" style="color:var(--acTx);background:var(--ac);border-color:var(--ac)">Save &amp; run</button>
+      <span class="small muted" id="codeInfo" style="align-self:center"></span>
+    </div>
+    <div class="edwrap"><div class="ed"><pre id="hl"></pre><textarea id="code" spellcheck="false" autocapitalize="off" autocorrect="off"></textarea></div></div>
+  </div>
+  <div class="pane" id="p-versions"><div class="vlist" id="vlist"></div></div>
+  <div class="refine">
+    <input id="refineIn" placeholder="Refine: make enemies faster, add a boss…">
+    <button class="btn sm" id="refineBtn" style="background:var(--ac);color:var(--acTx);border-color:var(--ac)">Apply</button>
+  </div>
+</div>
+
+<div class="sheet" id="moreSheet"><div class="card stack">
+  <h2 id="msTitle">Game</h2>
+  <button class="btn" id="mRename" style="width:100%">Rename</button>
+  <button class="btn" id="mShare" style="width:100%">Share or export HTML</button>
+  <button class="btn" id="mDup" style="width:100%">Duplicate</button>
+  <button class="btn danger" id="mDel" style="width:100%">Delete game</button>
+  <button class="btn" id="mClose" style="width:100%">Cancel</button>
+</div></div>
+
+<div id="busy"><div class="card"><div class="spin"></div><h2 id="busyT">Building your game</h2><div class="bar"><i id="busyBar"></i></div><div class="small muted" id="busyS">Contacting OpenAI…</div><button class="btn sm" id="busyCancel" style="margin:14px auto 0">Cancel</button></div></div>
+<div id="toast"></div>
+
+<script>
+/* ---------- storage (safe) ---------- */
+const mem={};
+const S={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return k in mem?mem[k]:d}},
+set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){mem[k]=v;if(e&&e.name==='QuotaExceededError')toast('Storage full. Delete some games.')}}};
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),2600)}
+let games=S.get('gf_games',[]);
+const save=()=>S.set('gf_games',games);
+
+/* ---------- options ---------- */
+const OPTS={genre:['Platformer','Shooter','Puzzle','Runner','RPG','Survival','Arcade','Racing'],difficulty:['Easy','Normal','Hard'],style:['Pixel','Neon','Minimal','Cartoon'],controls:['Touch joystick','Tap','Swipe','Tilt']};
+const sel={genre:'Survival',difficulty:'Normal',style:'Pixel',controls:'Touch joystick'};
+$$('.chips').forEach(box=>{const g=box.dataset.group;OPTS[g].forEach(o=>{const b=document.createElement('button');b.className='chip'+(sel[g]===o?' on':'');b.textContent=o;b.onclick=()=>{sel[g]=o;box.querySelectorAll('.chip').forEach(c=>c.classList.toggle('on',c===b))};box.appendChild(b)})});
+
+/* ---------- tabs ---------- */
+function tab(t){$$('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));$$('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+t));if(t==='library')renderLib();if(t==='create')checkKey()}
+$$('nav.tabs button').forEach(b=>b.onclick=()=>tab(b.dataset.tab));
+
+/* ---------- settings ---------- */
+const cfg=S.get('gf_cfg',{key:'',model:'gpt-5',custom:''});
+$('#key').value=cfg.key;$('#model').value=['gpt-5','gpt-5-mini','gpt-4.1','gpt-4o'].includes(cfg.model)?cfg.model:'custom';
+if($('#model').value==='custom'){$('#modelCustom').style.display='block';$('#modelCustom').value=cfg.custom||cfg.model}
+$('#model').onchange=()=>$('#modelCustom').style.display=$('#model').value==='custom'?'block':'none';
+function readCfg(){cfg.key=$('#key').value.trim();const m=$('#model').value;cfg.custom=$('#modelCustom').value.trim();cfg.model=m==='custom'?(cfg.custom||'gpt-5'):m;S.set('gf_cfg',cfg)}
+$('#saveKey').onclick=()=>{readCfg();toast('Saved');checkKey()};
+$('#testKey').onclick=async()=>{readCfg();const st=$('#keyStatus');st.className='small muted';st.textContent='Testing…';
+ try{const r=await fetch('https://api.openai.com/v1/models/'+encodeURIComponent(cfg.model),{headers:{Authorization:'Bearer '+cfg.key}});
+  if(r.ok){st.className='small keyok';st.textContent='Key works. Model '+cfg.model+' is available.'}
+  else{const j=await r.json().catch(()=>({}));st.className='small keyno';st.textContent='Problem: '+(j.error&&j.error.message||r.status)}}
+ catch(e){st.className='small keyno';st.textContent='Could not reach OpenAI: '+e.message}};
+function checkKey(){$('#keyWarn').style.display=cfg.key?'none':'block'}
+$('#wipe').onclick=()=>{if(!games.length)return toast('No games to delete');askConfirm('Delete all '+games.length+' games?',()=>{games=[];save();renderLib();toast('All games deleted')})};
+function askConfirm(msg,fn){const s=$('#moreSheet');const old=s.innerHTML;s.innerHTML=`<div class="card stack"><h2>${esc(msg)}</h2><button class="btn danger" id="cfY" style="width:100%">Delete</button><button class="btn" id="cfN" style="width:100%">Cancel</button></div>`;s.classList.add('on');
+ const close=()=>{s.classList.remove('on');s.innerHTML=old;bindMore()};$('#cfY').onclick=()=>{close();fn()};$('#cfN').onclick=close}
+
+/* ---------- OpenAI ---------- */
+const SYS=`You are GameForge, an expert HTML5 game developer. You output ONE complete, self-contained HTML file for a mobile game that runs inside an iPhone web view. Output ONLY the HTML document, starting with <!DOCTYPE html>, no markdown fences, no commentary.
+
+HARD REQUIREMENTS (every game must have all of these):
+1. Single file. Inline <style> and <script>. No external scripts, fonts, images or audio files. Draw all art procedurally on <canvas> (2D context).
+2. Full-screen canvas that fills window.innerWidth x innerHeight, handles resize and devicePixelRatio (cap at 2), portrait-first, respects env(safe-area-inset-*).
+3. Title screen with game name and "Tap to start".
+4. A real playable core loop with escalating challenge (levels, waves, or speed ramp).
+5. Score or progress shown in a HUD; persist best score in localStorage (wrap in try/catch).
+6. A clear win and/or lose condition.
+7. Game-over screen showing score and best, with a Restart button.
+8. Sound effects synthesized with the Web Audio API (create/resume AudioContext on first user touch). Include a mute toggle.
+9. On-screen touch controls sized for thumbs (>=56px), using pointer events with touch-action:none and preventDefault; also support keyboard for desktop testing.
+10. A pause button (top corner) that freezes the game and shows a pause menu with Resume and Restart.
+11. requestAnimationFrame loop with delta time, smooth 60fps on iPhone; avoid allocating in the hot loop; cap entity counts.
+12. Disable page scrolling, text selection, and double-tap zoom (user-select:none; touch-action:none on body and canvas).
+13. Whenever the score changes call: if(window.GF)GF.score(currentScore). When the game ends call: if(window.GF)GF.over(finalScore).
+14. Code must be robust: no undefined variables, guard against NaN, and no console errors.
+Make it fun, polished and juicy: particles, screen shake, easing, color palette matching the requested art style.`;
+
+let abortCtl=null;
+function setBusy(on,t,s){$('#busy').classList.toggle('on',on);if(t)$('#busyT').textContent=t;if(s)$('#busyS').textContent=s;if(!on)$('#busyBar').style.width='0'}
+$('#busyCancel').onclick=()=>{abortCtl&&abortCtl.abort()};
+function extractHTML(t){t=t.trim();const f=t.match(/```(?:html)?\s*([\s\S]*?)```/i);if(f)t=f[1].trim();const i=t.search(/<!DOCTYPE html|<html/i);if(i>0)t=t.slice(i);const e=t.lastIndexOf('</html>');if(e>0)t=t.slice(0,e+7);return t}
+async function callAI(messages,label,expect=26000){
+ if(!cfg.key){tab('settings');toast('Add your OpenAI API key first');throw new Error('nokey')}
+ abortCtl=new AbortController();setBusy(true,label,'Contacting OpenAI…');
+ try{
+  const r=await fetch('https://api.openai.com/v1/chat/completions',{method:'POST',signal:abortCtl.signal,headers:{'Content-Type':'application/json',Authorization:'Bearer '+cfg.key},body:JSON.stringify({model:cfg.model,stream:true,messages})});
+  if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(j.error&&j.error.message||('HTTP '+r.status))}
+  const rd=r.body.getReader(),dec=new TextDecoder();let buf='',out='',t0=Date.now();
+  $('#busyS').textContent='Thinking through the design…';
+  while(true){const {done,value}=await rd.read();if(done)break;buf+=dec.decode(value,{stream:true});
+   const lines=buf.split('\n');buf=lines.pop();
+   for(const l of lines){const s=l.trim();if(!s.startsWith('data:'))continue;const d=s.slice(5).trim();if(d==='[DONE]')continue;
+    try{const j=JSON.parse(d);const c=j.choices&&j.choices[0]&&j.choices[0].delta&&j.choices[0].delta.content;if(c)out+=c}catch(e){}}
+   if(out.length){const p=Math.min(96,out.length/expect*100);$('#busyBar').style.width=p+'%';$('#busyS').textContent='Writing code… '+(out.length/1000).toFixed(1)+'k characters'}
+   else $('#busyS').textContent='Thinking through the design… '+Math.round((Date.now()-t0)/1000)+'s'}
+  $('#busyBar').style.width='100%';
+  const html=extractHTML(out);if(!/<script/i.test(html))throw new Error('The model did not return a game. Try again.');
+  return html;
+ }catch(e){if(e.name==='AbortError')throw new Error('cancelled');throw e}
+ finally{setBusy(false);abortCtl=null}
+}
+const titleOf=(html,fb)=>{const m=html.match(/<title>([^<]{1,60})<\/title>/i);return (m&&m[1].trim())||fb};
+
+$('#genBtn').onclick=async()=>{
+ const idea=$('#idea').value.trim();if(!idea){$('#idea').focus();return toast('Describe your game first')}
+ const brief=`Game idea: ${idea}\nGenre: ${sel.genre}\nDifficulty: ${sel.difficulty}\nArt style: ${sel.style}\nPrimary controls: ${sel.controls}${sel.controls==='Tilt'?' (use DeviceOrientationEvent; on iOS request permission from the start tap via DeviceOrientationEvent.requestPermission; provide touch fallback)':''}\nGive the game a catchy name and put it in <title>.`;
+ try{const html=await callAI([{role:'system',content:SYS},{role:'user',content:brief}],'Building your game');
+  const g={id:uid(),title:titleOf(html,idea.slice(0,28)),prompt:idea,opts:{...sel},versions:[{code:html,note:'Initial build',ts:Date.now()}],cur:0,thumb:'',high:0,created:Date.now(),last:Date.now()};
+  games.unshift(g);save();$('#idea').value='';openGame(g.id);toast('Game built')}
+ catch(e){if(e.message==='cancelled')toast('Cancelled');else if(e.message!=='nokey')toast('Error: '+e.message)}
+};
+
+/* ---------- workspace ---------- */
+let G=null,logs=[],fps=false;
+const cur=()=>G.versions[G.cur].code;
+function openGame(id){G=games.find(g=>g.id===id);if(!G)return;G.last=Date.now();save();$('#ws').classList.add('on');$('#wsTitle').textContent=G.title;wsTab('play');run();renderVers()}
+$('#wsBack').onclick=()=>{$('#ws').classList.remove('on');$('#frame').srcdoc='';G=null;renderLib()};
+function wsTab(p){$$('.wtabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));$$('.pane').forEach(x=>x.classList.toggle('on',x.id==='p-'+p));if(p==='code')loadCode();if(p==='versions')renderVers()}
+$$('.wtabs button').forEach(b=>b.onclick=()=>wsTab(b.dataset.p));
+
+const BRIDGE=fps=>`<script>(function(){var P=function(t,a){try{parent.postMessage({gf:1,t:t,a:a},'*')}catch(e){}};
+var f=function(x){try{if(x instanceof Error)return x.stack||x.message;if(typeof x==='object')return JSON.stringify(x);return String(x)}catch(e){return String(x)}};
+['log','info','warn','error'].forEach(function(k){var o=console[k];console[k]=function(){P(k,[].map.call(arguments,f).join(' '));try{o.apply(console,arguments)}catch(e){}}});
+window.addEventListener('error',function(e){P('error',(e.message||'Error')+(e.lineno?' (line '+e.lineno+':'+e.colno+')':'')+(e.error&&e.error.stack?'\\n'+e.error.stack:''))});
+window.addEventListener('unhandledrejection',function(e){P('error','Unhandled promise: '+f(e.reason))});
+window.GF={score:function(s){P('score',+s||0)},over:function(s){P('over',+s||0)}};
+setTimeout(function snap(){try{var c=document.querySelector('canvas');if(c&&c.width){var w=180,h=Math.round(w*c.height/c.width)||240,t=document.createElement('canvas');t.width=w;t.height=h;t.getContext('2d').drawImage(c,0,0,w,h);P('thumb',t.toDataURL('image/jpeg',.7))}}catch(e){}},2500);
+${fps?`(function(){var d=document.createElement('div');d.style.cssText='position:fixed;left:6px;bottom:6px;z-index:99999;background:rgba(0,0,0,.6);color:#4ade80;font:12px monospace;padding:3px 6px;border-radius:4px;pointer-events:none';var n=0,l=performance.now();function L(t){n++;if(t-l>=500){d.textContent=Math.round(n*1000/(t-l))+' fps';n=0;l=t}requestAnimationFrame(L)}document.addEventListener('DOMContentLoaded',function(){document.body.appendChild(d)});if(document.body)document.body.appendChild(d);requestAnimationFrame(L)})();`:''}
+})();<\/script>`;
+function run(){logs=[];renderCon();const code=cur();const b=BRIDGE(fps);
+ const html=/<head[^>]*>/i.test(code)?code.replace(/<head[^>]*>/i,m=>m+b):b+code;
+ $('#frame').srcdoc=html}
+window.addEventListener('message',e=>{const d=e.data;if(!d||!d.gf||!G||e.source!==$('#frame').contentWindow)return;
+ if(d.t==='thumb'){if(!G.thumb||G._snapNew){G.thumb=d.a;G._snapNew=false;save()}return}
+ if(d.t==='score'||d.t==='over'){if(d.a>(G.high||0)){G.high=d.a;save()}if(d.t==='over')addLog('info','Game over · score '+d.a);return}
+ addLog(d.t,d.a)});
+function addLog(t,m){if(logs.length>300)logs.shift();logs.push({t,m,ts:new Date()});renderCon()}
+function renderCon(){const errs=logs.filter(l=>l.t==='error').length;const b=$('#errBadge');b.style.display=errs?'inline-block':'none';b.textContent=errs;$('#bFix2').style.display=errs?'':'none';
+ $('#con').innerHTML=logs.length?logs.map(l=>`<div class="ln ${l.t}">${l.ts.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'})}  ${esc(l.m)}</div>`).join(''):'<div class="muted" style="padding:20px 4px;font-family:Satoshi">No messages yet. Errors, warnings and logs from the running game appear here.</div>';
+ const c=$('#con');c.scrollTop=c.scrollHeight}
+$('#bClear').onclick=()=>{logs=[];renderCon()};
+$('#bRestart').onclick=run;
+$('#bFps').onclick=()=>{fps=!fps;$('#bFps').textContent='FPS: '+(fps?'on':'off');run()};
+$('#bFull').onclick=()=>{$('#stage').classList.add('full');const f=$('#frame');try{f.requestFullscreen&&f.requestFullscreen().catch(()=>{})}catch(e){}};
+$('#exitFull').onclick=()=>{$('#stage').classList.remove('full');try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}};
+
+function newVersion(code,note){G.versions=G.versions.slice(0,G.cur+1);G.versions.push({code,note,ts:Date.now()});if(G.versions.length>15)G.versions.shift();G.cur=G.versions.length-1;G._snapNew=true;save();run();renderVers()}
+$('#refineBtn').onclick=async()=>{const ins=$('#refineIn').value.trim();if(!ins)return $('#refineIn').focus();
+ try{const html=await callAI([{role:'system',content:SYS},{role:'user',content:'Here is the current game:\n\n'+cur()},{role:'user',content:'Apply this change and return the COMPLETE updated HTML file. Keep everything else working and keep all hard requirements:\n'+ins}],'Applying your change',cur().length);
+  $('#refineIn').value='';newVersion(html,ins);wsTab('play');toast('Change applied')}
+ catch(e){if(e.message==='cancelled')toast('Cancelled');else if(e.message!=='nokey')toast('Error: '+e.message)}};
+$('#refineIn').addEventListener('keydown',e=>{if(e.key==='Enter')$('#refineBtn').click()});
+async function fix(){const errs=logs.filter(l=>l.t==='error'||l.t==='warn').map(l=>l.t.toUpperCase()+': '+l.m).join('\n');
+ const extra=errs||'No errors were captured, but the game is not working correctly. Review the code for bugs, broken controls, or a blank screen and fix them.';
+ try{const html=await callAI([{role:'system',content:SYS},{role:'user',content:'This game has problems. Console output:\n'+extra+'\n\nCurrent code:\n'+cur()+'\n\nFix every issue and return the COMPLETE corrected HTML file.'}],'Fixing bugs',cur().length);
+  newVersion(html,'AI fix: '+(errs?errs.split('\n')[0].slice(0,70):'general review'));wsTab('play');toast('Fix applied')}
+ catch(e){if(e.message==='cancelled')toast('Cancelled');else if(e.message!=='nokey')toast('Error: '+e.message)}}
+$('#bFix').onclick=fix;$('#bFix2').onclick=fix;
+
+/* ---------- code editor ---------- */
+function hl(src){let s=esc(src);
+ s=s.replace(/(\/\*[\s\S]*?\*\/|&lt;!--[\s\S]*?--&gt;)|(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`|&quot;(?:(?!&quot;).)*&quot;)|(&lt;\/?[a-zA-Z][\w-]*)|\b(const|let|var|function|return|if|else|for|while|new|class|this|true|false|null|undefined|switch|case|break|continue|of|in|typeof|try|catch|async|await)\b|\b(\d+\.?\d*)\b/g,
+ (m,c1,c2,str,tag,kw,num)=>c1||c2?`<span class="c">${m}</span>`:str?`<span class="s">${m}</span>`:tag?`<span class="t">${m}</span>`:kw?`<span class="k">${m}</span>`:num?`<span class="n">${m}</span>`:m);
+ return s+'\n'}
+let hlT;function syncHL(){clearTimeout(hlT);hlT=setTimeout(()=>{const v=$('#code').value;$('#hl').innerHTML=v.length<120000?hl(v):esc(v)+'\n'},60)}
+function loadCode(){const c=$('#code');c.value=cur();$('#hl').innerHTML=hl(c.value);$('#codeInfo').textContent=c.value.split('\n').length+' lines · v'+(G.cur+1)}
+$('#code').addEventListener('input',syncHL);
+$('#code').addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();const t=e.target,s=t.selectionStart;t.setRangeText('  ',s,t.selectionEnd,'end');syncHL()}});
+$('#bRun').onclick=()=>{const v=$('#code').value;if(v===cur()){run();wsTab('play');return}newVersion(v,'Manual edit');wsTab('play');toast('Saved as new version')};
+
+/* ---------- versions ---------- */
+function renderVers(){if(!G)return;$('#vlist').innerHTML=G.versions.map((v,i)=>`<div class="ver ${i===G.cur?'cur':''}"><div class="vt"><div>v${i+1} · ${esc(v.note)}</div><div class="small muted">${new Date(v.ts).toLocaleString()}${i===G.cur?' · current':''}</div></div>${i===G.cur?'':`<button class="btn sm" data-v="${i}">Restore</button>`}</div>`).reverse().join('');
+ $$('#vlist [data-v]').forEach(b=>b.onclick=()=>{G.cur=+b.dataset.v;save();run();renderVers();toast('Restored v'+(G.cur+1))})}
+
+/* ---------- more sheet ---------- */
+function bindMore(){
+ $('#mClose').onclick=()=>$('#moreSheet').classList.remove('on');
+ $('#mRename').onclick=()=>{const s=$('#moreSheet');s.querySelector('.card').innerHTML=`<h2>Rename</h2><input id="rnIn" value="${esc(G.title)}"><button class="btn pri" id="rnOk">Save</button><button class="btn" id="rnNo" style="width:100%">Cancel</button>`;
+  $('#rnIn').focus();const done=()=>{s.classList.remove('on');restoreMore()};$('#rnOk').onclick=()=>{const v=$('#rnIn').value.trim();if(v){G.title=v;save();$('#wsTitle').textContent=v}done()};$('#rnNo').onclick=done};
+ $('#mShare').onclick=async()=>{const name=(G.title.replace(/[^\w\- ]+/g,'').trim()||'game')+'.html';const file=new File([cur()],name,{type:'text/html'});
+  $('#moreSheet').classList.remove('on');
+  try{if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:G.title});return}}catch(e){if(e.name==='AbortError')return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=name;document.body.appendChild(a);a.click();a.remove();toast('Exported '+name)};
+ $('#mDup').onclick=()=>{const c=JSON.parse(JSON.stringify(G));c.id=uid();c.title=G.title+' copy';c.created=c.last=Date.now();games.unshift(c);save();$('#moreSheet').classList.remove('on');openGame(c.id);toast('Duplicated')};
+ $('#mDel').onclick=()=>{const id=G.id;$('#moreSheet').classList.remove('on');askConfirm('Delete "'+G.title+'"?',()=>{games=games.filter(g=>g.id!==id);save();$('#wsBack').click();toast('Deleted')})};
+}
+const moreHTML=$('#moreSheet').innerHTML;function restoreMore(){$('#moreSheet').innerHTML=moreHTML;bindMore()}
+bindMore();
+$('#wsMore').onclick=()=>{restoreMore();$('#msTitle').textContent=G.title;$('#moreSheet').classList.add('on')};
+$('#moreSheet').addEventListener('click',e=>{if(e.target.id==='moreSheet'){e.currentTarget.classList.remove('on');restoreMore()}});
+
+/* ---------- library ---------- */
+function ago(t){const s=(Date.now()-t)/1000;if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
+function renderLib(){$('#libCount').textContent=games.length?games.length+(games.length===1?' game':' games'):'';
+ if(!games.length){$('#lib').style.display='block';$('#lib').innerHTML=`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><rect x="2" y="7" width="20" height="11" rx="4"/><path d="M7 11v3M5.5 12.5h3M15 12h.01M18 13h.01"/></svg><h2 style="color:var(--tx)">No games yet</h2><p class="small">Describe an idea on the Create tab, or try the built-in demo.</p><button class="btn" style="margin:12px auto 0" onclick="tab('create')">Create a game</button></div>`;return}
+ $('#lib').style.display='grid';
+ $('#lib').innerHTML=[...games].sort((a,b)=>b.last-a.last).map(g=>`<button class="gcard" data-id="${g.id}"><div class="th" style="${g.thumb?`background-image:url(${g.thumb})`:''}">${g.thumb?'':esc(g.title[0]||'G')}</div><div class="meta"><div class="nm">${esc(g.title)}</div><div class="small muted">Best ${g.high||0} · ${ago(g.last)}</div></div></button>`).join('');
+ $$('#lib .gcard').forEach(b=>b.onclick=()=>openGame(b.dataset.id))}
+
+/* ---------- demo ---------- */
+$('#demoBtn').onclick=()=>{const g={id:uid(),title:'Neon Drift',prompt:'Built-in demo',opts:{},versions:[{code:DEMO,note:'Built-in demo',ts:Date.now()}],cur:0,thumb:'',high:0,created:Date.now(),last:Date.now()};games.unshift(g);save();openGame(g.id)};
+const DEMO=`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover"><title>Neon Drift</title>
+<style>html,body{margin:0;height:100%;background:#07070d;overflow:hidden;user-select:none;-webkit-user-select:none;touch-action:none;font-family:system-ui,sans-serif}canvas{display:block;touch-action:none}</style></head><body><canvas id="c"></canvas><script>
+const c=document.getElementById('c'),x=c.getContext('2d');let W,H,D;function rs(){D=Math.min(2,devicePixelRatio||1);W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;c.style.width=W+'px';c.style.height=H+'px';x.setTransform(D,0,0,D,0,0)}addEventListener('resize',rs);rs();
+let AC=null,muted=false;function snd(f,d,t){if(!AC||muted)return;const o=AC.createOscillator(),g=AC.createGain();o.type=t||'square';o.frequency.value=f;g.gain.setValueAtTime(.08,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}
+let best=0;try{best=+localStorage.getItem('nd_best')||0}catch(e){}
+let st='title',p,orbs,foes,parts,score,t,shake,paused=false,tx=null;
+function reset(){p={x:W/2,y:H*.7,r:12};orbs=[];foes=[];parts=[];score=0;t=0;shake=0}
+reset();
+function burst(X,Y,col,n){for(let i=0;i<n;i++){const a=Math.random()*6.28,s=Math.random()*4+1;parts.push({x:X,y:Y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,l:1,col})}if(parts.length>300)parts.splice(0,parts.length-300)}
+const btn={pause:{x:0,y:0,w:48,h:48},mute:{x:0,y:0,w:48,h:48}};
+function hit(b,X,Y){return X>b.x&&X<b.x+b.w&&Y>b.y&&Y<b.y+b.h}
+c.addEventListener('pointerdown',e=>{e.preventDefault();if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(_){}}else AC.resume&&AC.resume();const X=e.clientX,Y=e.clientY;
+ if(st==='play'&&hit(btn.pause,X,Y)){paused=!paused;return}if(hit(btn.mute,X,Y)){muted=!muted;return}
+ if(paused){if(Y>H/2+10&&Y<H/2+60){paused=false;reset();}else paused=false;return}
+ if(st!=='play'){reset();st='play';snd(660,.15);return}tx=X;});
+c.addEventListener('pointermove',e=>{if(st==='play'&&!paused&&e.buttons)tx=e.clientX});c.addEventListener('pointerup',()=>tx=null);
+const keys={};addEventListener('keydown',e=>{keys[e.key]=1;if(e.key===' '&&st!=='play'){reset();st='play'}if(e.key==='p')paused=!paused});addEventListener('keyup',e=>keys[e.key]=0);
+let last=performance.now();
+function loop(n){const dt=Math.min(.05,(n-last)/1000);last=n;if(st==='play'&&!paused)upd(dt);draw();requestAnimationFrame(loop)}
+function upd(dt){t+=dt;const sp=1+t/25;
+ if(tx!=null)p.x+=(tx-p.x)*Math.min(1,dt*12);if(keys.ArrowLeft||keys.a)p.x-=420*dt;if(keys.ArrowRight||keys.d)p.x+=420*dt;p.x=Math.max(p.r,Math.min(W-p.r,p.x));
+ if(Math.random()<dt*2.2)orbs.push({x:20+Math.random()*(W-40),y:-20,r:8});
+ if(Math.random()<dt*(0.9+t/18)&&foes.length<40)foes.push({x:20+Math.random()*(W-40),y:-30,r:10+Math.random()*12,v:(160+Math.random()*120)*sp});
+ for(let i=orbs.length-1;i>=0;i--){const o=orbs[i];o.y+=180*sp*dt;if(Math.hypot(o.x-p.x,o.y-p.y)<o.r+p.r){score+=10;if(window.GF)GF.score(score);burst(o.x,o.y,'#4ff',14);snd(880,.08);orbs.splice(i,1)}else if(o.y>H+20)orbs.splice(i,1)}
+ for(let i=foes.length-1;i>=0;i--){const f=foes[i];f.y+=f.v*dt;if(Math.hypot(f.x-p.x,f.y-p.y)<f.r+p.r-3){burst(p.x,p.y,'#f4a',60);shake=18;snd(110,.5,'sawtooth');st='over';if(score>best){best=score;try{localStorage.setItem('nd_best',best)}catch(e){}}if(window.GF)GF.over(score);return}if(f.y>H+40){foes.splice(i,1);score+=1}}
+ for(let i=parts.length-1;i>=0;i--){const q=parts[i];q.x+=q.vx;q.y+=q.vy;q.l-=dt*1.6;if(q.l<=0)parts.splice(i,1)}shake*=.9}
+function txt(s,X,Y,sz,col,al){x.fillStyle=col||'#fff';x.font='700 '+sz+'px system-ui';x.textAlign=al||'center';x.fillText(s,X,Y)}
+function draw(){x.save();if(shake>.5)x.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);x.fillStyle='rgba(7,7,13,.35)';x.fillRect(-20,-20,W+40,H+40);
+ x.strokeStyle='rgba(120,80,255,.12)';for(let gy=(t*120)%40;gy<H;gy+=40){x.beginPath();x.moveTo(0,gy);x.lineTo(W,gy);x.stroke()}
+ x.shadowBlur=16;for(const o of orbs){x.shadowColor=x.fillStyle='#4ff';x.beginPath();x.arc(o.x,o.y,o.r,0,7);x.fill()}
+ for(const f of foes){x.shadowColor=x.fillStyle='#f4a';x.beginPath();x.moveTo(f.x,f.y-f.r);x.lineTo(f.x+f.r,f.y);x.lineTo(f.x,f.y+f.r);x.lineTo(f.x-f.r,f.y);x.fill()}
+ for(const q of parts){x.globalAlpha=Math.max(0,q.l);x.shadowColor=x.fillStyle=q.col;x.fillRect(q.x-2,q.y-2,4,4)}x.globalAlpha=1;
+ if(st!=='over'){x.shadowColor=x.fillStyle='#ff5';x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fill()}x.shadowBlur=0;x.restore();
+ btn.pause.x=W-60;btn.pause.y=14;btn.mute.x=W-116;btn.mute.y=14;
+ if(st==='play'){txt(score,20,44,28,'#fff','left');txt('BEST '+best,20,66,12,'#999','left');x.fillStyle='rgba(255,255,255,.12)';x.fillRect(btn.pause.x,14,48,48);x.fillStyle='#fff';x.fillRect(btn.pause.x+16,28,5,20);x.fillRect(btn.pause.x+27,28,5,20)}
+ x.fillStyle='rgba(255,255,255,.12)';x.fillRect(btn.mute.x,14,48,48);txt(muted?'🔇':'🔊',btn.mute.x+24,46,20);
+ if(st==='title'){txt('NEON DRIFT',W/2,H*.38,40,'#ff5');txt('Drag to steer. Grab cyan orbs, dodge pink shards.',W/2,H*.38+36,14,'#bbb');txt('Tap to start',W/2,H*.6,20,'#4ff')}
+ if(st==='over'){txt('GAME OVER',W/2,H*.38,38,'#f4a');txt('Score '+score+'   Best '+best,W/2,H*.38+40,18);x.fillStyle='#4ff';x.fillRect(W/2-80,H*.55,160,52);txt('Restart',W/2,H*.55+34,20,'#07070d')}
+ if(paused){x.fillStyle='rgba(0,0,0,.7)';x.fillRect(0,0,W,H);txt('PAUSED',W/2,H/2-30,34);txt('Tap to resume',W/2,H/2,16,'#bbb');txt('Restart',W/2,H/2+42,18,'#4ff')}}
+requestAnimationFrame(loop);
+<\/script></body></html>`;
+
+checkKey();
+if('serviceWorker' in navigator){try{navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}}
+</script>
+</body>
+</html>
